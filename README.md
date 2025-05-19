@@ -8,6 +8,7 @@ A URL do repositório do Github compartilhado é https://github.com/emarchesini/
 E o responsável pelo grupo é Eduardo.
 
 A lista dos membros deste grupo são:
+
 Nome        E-mail                    Telefone
 Eduardo	    emarchesini@gmail.com	    +5519992183732
 Fabio	      fabiox@gmail.com	        +5585998581200
