@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NF Agent Service</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        textarea, input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .stream-output {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .task-list {
+            margin-top: 30px;
+        }
+        .task-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .task-status {
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-created { color: #6c757d; }
+        .status-processing { color: #ffc107; }
+        .status-completed { color: #28a745; }
+        .status-error { color: #dc3545; }
+        .status-waiting_for_input { color: #fd7e14; }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: none;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-title {
+            margin: 0;
+            color: #333;
+        }
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: #000;
+        }
+        .input-prompt {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+        .input-waiting {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 NF Agent Service</h1>
+        
+        <div class="form-group">
+            <label for="taskInput">Descreva sua tarefa:</label>
+            <textarea id="taskInput" placeholder="Ex: Analise as notas fiscais do mês de janeiro de 2024, identifique os principais emitentes por valor total e crie um relatório resumido anonimizado"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="descriptionInput">Descrição adicional (opcional):</label>
+            <input type="text" id="descriptionInput" placeholder="Informações adicionais sobre a tarefa">
+        </div>
+        
+        <button onclick="createTask()">Criar Tarefa</button>
+        <button onclick="listTasks()">Listar Tarefas</button>
+        <button onclick="clearResults()">Limpar Resultados</button>
+        
+        <div id="result"></div>
+        
+        <div class="task-list">
+            <h3>Tarefas Recentes</h3>
+            <div id="taskList"></div>
+        </div>
+    </div>
+
+    <!-- Modal for user input -->
+    <div id="inputModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Input Necessário</h3>
+                <span class="close" onclick="closeInputModal()">&times;</span>
+            </div>
+            <div id="inputPrompt" class="input-prompt"></div>
+            <div class="form-group">
+                <label for="userInputField">Sua resposta:</label>
+                <textarea id="userInputField" placeholder="Digite sua resposta aqui..."></textarea>
+            </div>
+            <button onclick="submitUserInput()">Enviar</button>
+            <button onclick="closeInputModal()" style="background-color: #6c757d;">Cancelar</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8001';
+        let currentTaskId = null;
+        let inputPollingInterval = null;
+        
+        async function createTask() {
+            const task = document.getElementById('taskInput').value.trim();
+            const description = document.getElementById('descriptionInput').value.trim();
+            
+            if (!task) {
+                showResult('Por favor, descreva uma tarefa.', 'error');
+                return;
+            }
+            
+            try {
+                showResult('Criando tarefa...', 'info');
+                
+                const response = await fetch(`${API_BASE}/tasks/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        task: task,
+                        description: description || null
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    currentTaskId = result.task_id;
+                    showResult(`Tarefa criada com sucesso!\nID: ${result.task_id}\nIniciando execução...`, 'success');
+                    
+                    // Clear inputs first
+                    document.getElementById('taskInput').value = '';
+                    document.getElementById('descriptionInput').value = '';
+                    
+                    // Wait a moment for backend to process the task creation
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    
+                    // Start streaming (this is the primary interaction)
+                    setTimeout(() => streamTask(result.task_id), 200);
+                    
+                    // Start input monitoring after streaming has begun
+                    setTimeout(() => startInputMonitoring(result.task_id), 4000);
+                    
+                    // Refresh task list after everything is settled
+                    setTimeout(listTasks, 6000);
+                } else {
+                    showResult(`Erro: ${result.detail}`, 'error');
+                }
+            } catch (error) {
+                showResult(`Erro de conexão: ${error.message}`, 'error');
+            }
+        }
+        
+        function startInputMonitoring(taskId) {
+            // Poll for input requests every 5 seconds (less aggressive)
+            inputPollingInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/tasks/${taskId}`);
+                    const taskStatus = await response.json();
+                    
+                    if (taskStatus.waiting_for_input) {
+                        clearInterval(inputPollingInterval);
+                        showInputModal(taskId, taskStatus.input_prompt);
+                    } else if (taskStatus.status === 'completed' || taskStatus.status === 'error' || taskStatus.status === 'failed') {
+                        clearInterval(inputPollingInterval);
+                        // Refresh task list when task is done
+                        setTimeout(listTasks, 1000);
+                    }
+                } catch (error) {
+                    console.error('Error checking for input requests:', error);
+                    // Stop polling on repeated errors
+                    let errorCount = (startInputMonitoring.errorCount || 0) + 1;
+                    startInputMonitoring.errorCount = errorCount;
+                    if (errorCount > 3) {
+                        console.warn('Too many polling errors, stopping input monitoring');
+                        clearInterval(inputPollingInterval);
+                    }
+                }
+            }, 5000); // Increased from 2000 to 5000ms
+        }
+        
+        function showInputModal(taskId, prompt) {
+            document.getElementById('inputPrompt').textContent = prompt || 'Os agentes precisam de informações adicionais:';
+            document.getElementById('userInputField').value = '';
+            document.getElementById('inputModal').style.display = 'block';
+            currentTaskId = taskId;
+            
+            // Add visual indicator in the stream
+            const streamDiv = document.querySelector('.stream-output');
+            if (streamDiv) {
+                streamDiv.innerHTML += `<div class="input-waiting">⏳ Aguardando input: ${prompt}</div>`;
+                streamDiv.scrollTop = streamDiv.scrollHeight;
+            }
+        }
+        
+        function closeInputModal() {
+            document.getElementById('inputModal').style.display = 'none';
+            currentTaskId = null;
+        }
+        
+        async function submitUserInput() {
+            const userInput = document.getElementById('userInputField').value.trim();
+            
+            if (!userInput) {
+                alert('Por favor, digite uma resposta.');
+                return;
+            }
+            
+            if (!currentTaskId) {
+                alert('Erro: ID da tarefa não encontrado.');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/tasks/${currentTaskId}/input`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        input: userInput
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    closeInputModal();
+                    
+                    // Add visual confirmation in the stream
+                    const streamDiv = document.querySelector('.stream-output');
+                    if (streamDiv) {
+                        streamDiv.innerHTML += `<div style="color: #28a745; font-weight: bold;">✅ Input fornecido: ${userInput}</div>`;
+                        streamDiv.scrollTop = streamDiv.scrollHeight;
+                    }
+                    
+                    // Resume monitoring
+                    startInputMonitoring(currentTaskId);
+                    
+                    showResult('Input fornecido com sucesso! A tarefa continuará...', 'success');
+                } else {
+                    alert(`Erro ao fornecer input: ${result.detail}`);
+                }
+            } catch (error) {
+                alert(`Erro de conexão: ${error.message}`);
+            }
+        }
+        
+        async function streamTask(taskId) {
+            try {
+                const streamDiv = document.createElement('div');
+                streamDiv.className = 'stream-output';
+                streamDiv.innerHTML = '<strong>Executando tarefa em tempo real:</strong><br><br>';
+                
+                const resultDiv = document.getElementById('result');
+                resultDiv.appendChild(streamDiv);
+                
+                const response = await fetch(`${API_BASE}/tasks/${taskId}/stream`, {
+                    method: 'POST'
+                });
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                const timestamp = new Date().toLocaleTimeString();
+                                
+                                if (data.type === 'input_request') {
+                                    streamDiv.innerHTML += `<div class="input-waiting">[${timestamp}] ⏳ Aguardando input: ${data.prompt}</div>`;
+                                } else if (data.type === 'completion') {
+                                    streamDiv.innerHTML += `<div style="color: #28a745; font-weight: bold;">[${timestamp}] ✅ ${data.message}</div>`;
+                                } else if (data.type === 'error') {
+                                    streamDiv.innerHTML += `<div style="color: #dc3545; font-weight: bold;">[${timestamp}] ❌ ${data.message}</div>`;
+                                } else {
+                                    streamDiv.innerHTML += `[${timestamp}] ${data.source || 'system'}: ${data.content || data.message}<br>`;
+                                }
+                                
+                                streamDiv.scrollTop = streamDiv.scrollHeight;
+                            } catch (e) {
+                                // Ignore parsing errors
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Erro no streaming:', error);
+            }
+        }
+        
+        async function listTasks() {
+            try {
+                const response = await fetch(`${API_BASE}/tasks/`);
+                const result = await response.json();
+                
+                const taskListDiv = document.getElementById('taskList');
+                taskListDiv.innerHTML = '';
+                
+                if (result.tasks && result.tasks.length > 0) {
+                    result.tasks.forEach(task => {
+                        const taskDiv = document.createElement('div');
+                        taskDiv.className = 'task-item';
+                        
+                        let statusDisplay = task.status;
+                        if (task.waiting_for_input) {
+                            statusDisplay += ' (aguardando input)';
+                        }
+                        
+                        taskDiv.innerHTML = `
+                            <div><strong>ID:</strong> ${task.task_id}</div>
+                            <div><strong>Tarefa:</strong> ${task.task}</div>
+                            <div><strong>Status:</strong> <span class="task-status status-${task.status}">${statusDisplay}</span></div>
+                            <div><strong>Criado em:</strong> ${new Date(task.created_at).toLocaleString()}</div>
+                            ${task.completed_at ? `<div><strong>Concluído em:</strong> ${new Date(task.completed_at).toLocaleString()}</div>` : ''}
+                            ${task.input_prompt ? `<div><strong>Aguardando input:</strong> ${task.input_prompt}</div>` : ''}
+                            ${task.error ? `<div><strong>Erro:</strong> ${task.error}</div>` : ''}
+                            ${task.waiting_for_input ? `<button onclick="showInputModal('${task.task_id}', '${task.input_prompt}')" style="margin-top: 10px; background-color: #fd7e14;">Fornecer Input</button>` : ''}
+                        `;
+                        taskListDiv.appendChild(taskDiv);
+                    });
+                } else {
+                    taskListDiv.innerHTML = '<p>Nenhuma tarefa encontrada.</p>';
+                }
+            } catch (error) {
+                showResult(`Erro ao listar tarefas: ${error.message}`, 'error');
+            }
+        }
+        
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `<div class="result ${type}">${message}</div>`;
+        }
+        
+        function clearResults() {
+            document.getElementById('result').innerHTML = '';
+            if (inputPollingInterval) {
+                clearInterval(inputPollingInterval);
+            }
+        }
+        
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('inputModal');
+            if (event.target === modal) {
+                closeInputModal();
+            }
+        }
+        
+        // Handle Enter key in input field
+        document.getElementById('userInputField').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                submitUserInput();
+            }
+        });
+        
+        // Load tasks on page load
+        window.onload = listTasks;
+    </script>
+</body>
+</html> 
