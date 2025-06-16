@@ -146,10 +146,7 @@ docker-compose logs -f
 - **NF Agent API**: http://localhost:8001
 - **PostgreSQL**: localhost:5432
 
-### Documentação das APIs
 
-- **Load Service**: http://localhost:8000/docs
-- **NF Agent**: http://localhost:8001/docs
 
 ## 📊 Funcionalidades Principais
 
@@ -278,12 +275,6 @@ docker-compose down -v
 # Rebuild e restart
 docker-compose up -d --build
 ```
-
-## 📚 Documentação Adicional
-
-- [Load Service README](services/load_service/README.md)
-- [NF Agent README](services/nf_agent/README.md)
-- [UI Service README](services/ui/README.md)
 
 ## 🤝 Contribuição
 
