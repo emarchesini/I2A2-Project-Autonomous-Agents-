@@ -184,6 +184,8 @@ UPLOAD_DIR=uploads
 ```env
 OLLAMA_HOST=192.168.0.120:11434
 OLLAMA_MODEL=mistral:latest
+OLLAMA2_HOST=192.168.0.120:11434
+OLLAMA2_MODEL=mistral:latest
 POSTGRES_URL=postgresql://postgres:postgres@host.docker.internal:5432/notasfiscais
 FILESYSTEM_MOUNT_PATH=/home/enzo/dev/autogen/fs
 MAX_MESSAGES=50
