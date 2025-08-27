@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  processador-rh:
+    build: .
+    container_name: processador-rh-api
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TZ=America/Sao_Paulo
+      # CONFIGURAÇÃO OLLAMA REMOTO ⭐
+      - OLLAMA_HOST=http://192.168.0.140:11434       # 🤖 Servidor Ollama remoto
+      - OLLAMA_MODEL=gemma3:27b-it-q4_K_M                      # 🧠 Modelo a usar (llama2, llama3, codellama, mistral)
+      # 
+      # EXEMPLOS DE CONFIGURAÇÃO:
+      # - OLLAMA_HOST=http://192.168.1.100:11434   # Servidor na rede local
+      # - OLLAMA_HOST=https://ollama.empresa.com   # Servidor na nuvem
+      # - OLLAMA_MODEL=llama3                      # Melhor qualidade
+      # - OLLAMA_MODEL=codellama                   # Especializado em código
+      # - OLLAMA_MODEL=mistral                     # Modelo leve/rápido
+    volumes:
+      # Volume para logs persistentes (opcional)
+      - ./logs:/app/logs
+      # Volume para resultados (opcional)
+      - ./resultados:/app/resultados_processamento
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+
+  # Serviço opcional para monitoramento
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: processador-rh-nginx
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #   depends_on:
+  #     - processador-rh
+  #   restart: unless-stopped
+
+networks:
+  default:
+    name: processador-rh-network
